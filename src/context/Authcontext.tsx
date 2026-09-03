@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config/constants';
+import { useNavigate } from 'react-router-dom';
 
 interface LoginResponse {
   isSuccess: boolean;
@@ -23,6 +23,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isAuthenticated, setIsAuthenticated] = React.useState<boolean>(false);
   const [user, setUser] = React.useState<any | null>(null);
   const [loading, setLoading] = React.useState<boolean>(false);
+  const navigate = useNavigate();
 
   // Example login function - replace with your API call
   const login = async (
@@ -52,7 +53,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const data: LoginResponse = await response.json();
 
       if (data.isSuccess && data.token) {
-        // Store token in localStorage or sessionStorage
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('user', data.userName || '');
 
@@ -83,6 +83,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('user');
     setIsAuthenticated(false);
     setUser(null);
+    navigate('/'); // Redirect to login page after logout
   };
 
   React.useEffect(() => {
