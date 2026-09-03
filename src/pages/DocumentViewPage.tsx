@@ -21,6 +21,7 @@ interface Doc {
   attachmentPaths?: string[] | null;
   createdBy?: string;
   createdAt?: string;
+  canEdit:boolean
 }
 
 interface DropdownOption {
@@ -282,7 +283,7 @@ export default function DocumentsViewPage() {
   const [sortConfig, setSortConfig] = useState<{ key: ColumnKey; direction: 'asc' | 'desc' } | null>(null);
   const [columnFilters, setColumnFilters] = useState<Partial<Record<ColumnKey, string>>>({});
 
-  const token = () => localStorage.getItem('token');
+  const token = () => localStorage.getItem('authToken');
   const authHeader = () => ({ Authorization: `Bearer ${token()}` });
 
   // Options shown in "صادر من" once جهة الصدور is picked
@@ -859,7 +860,7 @@ export default function DocumentsViewPage() {
                         </button>
                       </td>
                       <td className="py-2.5 px-4 border-b border-border">
-                        <div className="flex items-center gap-2">
+                        {doc.canEdit?<div className="flex items-center gap-2">
                           <button
                             onClick={() => handleOpenUpdate(doc.id)}
                             disabled={updateLoading}
@@ -867,7 +868,7 @@ export default function DocumentsViewPage() {
                           >
                             تعديل
                           </button>
-                        </div>
+                        </div>:null}
                       </td>
                     </tr>
                   );
