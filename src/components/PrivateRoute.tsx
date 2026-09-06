@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom";
-import { isAuthenticated } from "../utils/auth";
+import { useAuth } from "../context/Authcontext";
 import type { JSX } from "react";
 
 interface Props {
@@ -7,7 +7,11 @@ interface Props {
 }
 
 const PrivateRoute = ({ children }: Props) => {
-  if (!isAuthenticated()) {
+  const { isAuthenticated, initializing  } = useAuth();
+
+  if (initializing) return null;
+
+  if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
