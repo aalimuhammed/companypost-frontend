@@ -92,7 +92,6 @@ export default function GenericPostForm({
   const [companies,      setCompanies]      = useState<Option[]>([]);
   const [publisherOpts,  setPublisherOpts]  = useState<Option[]>([]);
   const [deliveryOpts,   setDeliveryOpts]   = useState<Option[]>([]);
- // const [workTypes,      setWorkTypes]      = useState<Option[]>([]);
   const [projects,       setProjects]       = useState<Option[]>([]);
   const [projectId,      setProjectId]       = useState('');
   const [loading,        setLoading]        = useState(true);
