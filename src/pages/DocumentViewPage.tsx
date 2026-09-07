@@ -63,7 +63,7 @@ interface DocDetail {
   postNumber?: string;
   recivedByName?: string;
   documentType?: number;
-  projectId?: string;
+  relatedToId?: string;
 }
 
 interface UpdateFormData {
@@ -85,7 +85,7 @@ interface UpdateFormData {
   documentType: string;      // transformer-only enum: 1=إيميل, 2=مذكرة داخلية
   postDocumentType: string;  // PostDocumentTypes enum: 1=مدني عام, 2=إليكتروميكانيك (was the broken "deptSelection")
   status: string;            // Status enum: 1=مكتمل, 2=قيد التنفيذ, 3=مرفوض, 4=معتمد, 5=قيد المراجعة, 6=لا شئ
-  projectId: string;
+  relatedToId: string;
   deliveryMethod: string;
   [key: string]: string;
 }
@@ -161,7 +161,7 @@ const EMPTY_FORM: UpdateFormData = {
   documentDate: '', deliveryDate: '', companyId: '', publishedId: '',
   receivedFromId: '', aboutWork:'', workTypeId: '', inComingNumber: '', oldReferenceNumber: '',
   postNumber: '', recivedByName: '', documentType: '', postDocumentType: '', status: '',
-  projectId: '', deliveryMethod: '1',
+  relatedToId: '', deliveryMethod: '1',
 };
 
 type ColumnKey =
@@ -464,7 +464,7 @@ export default function DocumentsViewPage() {
       documentType:     data.documentType?.toString() ?? '',
       postDocumentType: data.postDocumentType?.toString() ?? '',
       status:           data.status?.toString() ?? '',
-      projectId:        data.projectId        ?? '',
+      relatedToId:       data.relatedToId        ?? '',
       deliveryMethod:   data.deliveryMethod?.toString() ?? '1',
     });
 
@@ -540,11 +540,10 @@ export default function DocumentsViewPage() {
       fd.append('oldReferenceNumber', formData.oldReferenceNumber || '');
       fd.append('inComingNumber',     formData.inComingNumber || '');
       fd.append('aboutWork',      formData.aboutWork);
-      fd.append('projectId', formData.projectId ?? '');
+      fd.append('relatedToId', formData.relatedToId ?? '');
       if (isIncoming) {
           fd.append('publishedArea',      formData.publishedId);
           fd.append('receivedFromId',     formData.receivedFromId || '');
-          fd.append('projectId',          formData.projectId);
           fd.append('originalsender',     formData.originalsender || '');
           fd.append('aboutWork',      formData.aboutWork);
 
@@ -566,9 +565,6 @@ export default function DocumentsViewPage() {
         fd.append('postNumber',     formData.postNumber);
         fd.append('recivedByName',  formData.recivedByName);
         fd.append('documentType',   formData.documentType);
-      }
-      if (isIncoming) {
-        fd.append('projectId', formData.projectId);
       }
 
       newAttachmentFiles.forEach(f => fd.append('Attachments', f));
@@ -1018,6 +1014,7 @@ export default function DocumentsViewPage() {
           <div>
             <Label>صادر من</Label>
             <SearchableSelect
+              required
               options={publisherOpts}
               value={formData.publishedId}
               onChange={v => handleFormChange('publishedId', v)}
@@ -1029,10 +1026,10 @@ export default function DocumentsViewPage() {
   <Label>بخصوص</Label>
 
   <SearchableSelect
-    name="ProjectId"
+    name="RelatedToId"
     options={projects}
-    value={formData.projectId ?? ''}
-    onChange={(value) => handleFormChange('projectId', value)}
+    value={formData.relatedToId ?? ''}
+    onChange={(value) => handleFormChange('relatedToId', value)}
     placeholder="اختر المشروع - الإدارة"
   />
 </div>
@@ -1060,6 +1057,7 @@ export default function DocumentsViewPage() {
     <div>
       <Label>مستلم من</Label>
       <SearchableSelect
+        required
         options={deliveryOpts}
         value={formData.receivedFromId}
         onChange={(v) => handleFormChange("receivedFromId", v)}
@@ -1089,19 +1087,11 @@ export default function DocumentsViewPage() {
           {/* المشروع — incoming only */}
           {isIncoming && (
             <div className="md:col-span-2">
-              <Label>المشروع</Label>
-              <SearchableSelect
-                options={dropdownData.projectsList}
-                value={formData.projectId}
-                onChange={v => handleFormChange('projectId', v)}
-                placeholder="اختر"
-              />
               <div >
             <Label>نوع الأعمال</Label>
             <Input value={formData.aboutWork} onChange={e => handleFormChange('aboutWork', e.target.value)} />
-    </div>
             </div>
-            
+            </div>
           )}
 
 
