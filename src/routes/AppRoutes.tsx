@@ -11,6 +11,7 @@ import ContractsViewPage from '../pages/ContractsViewPage';
 import { AuthProvider } from '../context/Authcontext';
 import Login from '../components/Login';
 import CompanyUsersRegistration from '../components/CompanyUsersRegistration';
+import PrivateRoute from "../components/PrivateRoute";
 
 // Close drawer on route change
 function RouteWatcher({ onRouteChange }: { onRouteChange: () => void }) {
@@ -76,16 +77,17 @@ export default function App() {
       <Routes>
 
         {/* Auth pages WITHOUT layout */}
-        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Login />} />
         <Route path="/register" element={<CompanyUsersRegistration />} />
 
         {/* Pages WITH layout */}
         <Route
           path="/*"
           element={
+            <PrivateRoute>
             <Layout>
               <Routes>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/incoming" element={<IncomingPage />} />
                 <Route path="/outgoing/external" element={<OutgoingExternalPage />} />
                 <Route path="/outgoing/internal" element={<OutgoingInternalPage />} />
@@ -99,6 +101,7 @@ export default function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>
+            </PrivateRoute>
           }
         />
       </Routes>

@@ -18,10 +18,9 @@ const Login: React.FC = () => {
     const result = await login(usernameOrEmail, password);
 
     console.log(result);
-    debugger;
     setLoading(false);
     if (result?.isSuccess) {
-      navigate('/');
+      navigate('/dashboard');
     } else {
       setError(result?.message || 'فشل تسجيل الدخول');
     }

@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Badge, Spinner, Alert, Modal, Button } from '../components/UI';
 //import type { BadgeVariant } from '../components/UI';
 import { SearchableSelect } from '../components/SearchableSelect';
 import { API_BASE_URL } from '../config/constants';
 import type { Attachment } from '../types';
+import { API } from '../config/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,6 +22,7 @@ interface Doc {
   attachmentPaths?: string[] | null;
   createdBy?: string;
   createdAt?: string;
+  canEdit:boolean
 }
 
 interface DropdownOption {
@@ -46,6 +48,7 @@ interface DocDetail {
   publisherId: string;
   publishedArea?: string;
   recievedFromId: string;
+  aboutWork:string;
   oldReferenceNumber?: string; // incoming only — new field
   workTypeId: string;
   documentDate: string;
@@ -60,7 +63,7 @@ interface DocDetail {
   postNumber?: string;
   recivedByName?: string;
   documentType?: number;
-  projectId?: string;
+  relatedToId?: string;
 }
 
 interface UpdateFormData {
@@ -73,6 +76,7 @@ interface UpdateFormData {
   companyId: string;
   publishedId: string;
   receivedFromId: string;
+  aboutWork:string;
   workTypeId: string;
   oldReferenceNumber: string;
   inComingNumber: string;
@@ -81,7 +85,7 @@ interface UpdateFormData {
   documentType: string;      // transformer-only enum: 1=إيميل, 2=مذكرة داخلية
   postDocumentType: string;  // PostDocumentTypes enum: 1=مدني عام, 2=إليكتروميكانيك (was the broken "deptSelection")
   status: string;            // Status enum: 1=مكتمل, 2=قيد التنفيذ, 3=مرفوض, 4=معتمد, 5=قيد المراجعة, 6=لا شئ
-  projectId: string;
+  relatedToId: string;
   deliveryMethod: string;
   [key: string]: string;
 }
@@ -114,7 +118,7 @@ const DEPT_TYPE_OPTS: DropdownOption[] = [
 const DOC_TYPE_OPTS: DropdownOption[] = [
   { id: '1', name: 'إيميل' },
   { id: '2', name: 'مذكرة داخلية' },
-  { id: '2', name: 'طلب شراء' },
+  { id: '3', name: 'طلب شراء' },
 ];
 
 const DELIVERY_METHOD_OPTS: DropdownOption[] = [
@@ -155,9 +159,9 @@ const getStatusLabel = (status?: number | string): string => {
 const EMPTY_FORM: UpdateFormData = {
   documentNumber: '', subject: '', summary: '', notes: '',
   documentDate: '', deliveryDate: '', companyId: '', publishedId: '',
-  receivedFromId: '', workTypeId: '', inComingNumber: '', oldReferenceNumber: '',
+  receivedFromId: '', aboutWork:'', workTypeId: '', inComingNumber: '', oldReferenceNumber: '',
   postNumber: '', recivedByName: '', documentType: '', postDocumentType: '', status: '',
-  projectId: '', deliveryMethod: '1',
+  relatedToId: '', deliveryMethod: '1',
 };
 
 type ColumnKey =
@@ -252,7 +256,7 @@ export default function DocumentsViewPage() {
   const [saving,        setSaving]        = useState(false);
   const [formData,      setFormData]      = useState<UpdateFormData>({ ...EMPTY_FORM });
   const [selectedId,    setSelectedId]    = useState<string | null>(null);
-
+  const [projects, setProjects] = useState<Option[]>([]);
   // جهة الصدور / جهة التسليم — client-side only, never sent to the backend.
   // The backend only stores publishedId/receivedFromId as raw GUIDs with no
   // type flag, so on load we infer Department vs Project vs Company by
@@ -282,7 +286,7 @@ export default function DocumentsViewPage() {
   const [sortConfig, setSortConfig] = useState<{ key: ColumnKey; direction: 'asc' | 'desc' } | null>(null);
   const [columnFilters, setColumnFilters] = useState<Partial<Record<ColumnKey, string>>>({});
 
-  const token = () => localStorage.getItem('token');
+  const token = () => localStorage.getItem('authToken');
   const authHeader = () => ({ Authorization: `Bearer ${token()}` });
 
   // Options shown in "صادر من" once جهة الصدور is picked
@@ -314,6 +318,7 @@ export default function DocumentsViewPage() {
       }
     }
   };
+
 
   // ── Load filter projects on mount ──
   // useEffect(() => {
@@ -407,6 +412,16 @@ export default function DocumentsViewPage() {
       fetch(`${API_BASE_URL}/WorkTypes/get-worktypes`,    { headers: authHeader() }).then(r => r.json()),
     ]);
 
+      const projectsRes = await fetch(
+    `${API_BASE_URL}${API.PROJECTSDEPT}`,
+    { headers: authHeader() }
+  );
+
+  const projectsData = await projectsRes.json();
+
+  setProjects(Array.isArray(projectsData) ? projectsData : []);
+
+
     const deptOpts     = Array.isArray(departments)  ? departments  : [];
     const projOpts     = Array.isArray(projectsList) ? projectsList : [];
     const supplierOpts = Array.isArray(suppliers)    ? suppliers    : [];
@@ -440,6 +455,7 @@ export default function DocumentsViewPage() {
       companyId:        data.companyId        ?? '',
       publishedId:      rawPublisherId         ?? '',   // ← use the resolved value
       receivedFromId:   data.recievedFromId   ?? '',
+      aboutWork:        data.aboutWork?? '',
       workTypeId:       data.workTypeId       ?? '',
       inComingNumber:   data.inComingNumber   ?? '',
       oldReferenceNumber: data.oldReferenceNumber ?? '',   // ← new
@@ -448,7 +464,7 @@ export default function DocumentsViewPage() {
       documentType:     data.documentType?.toString() ?? '',
       postDocumentType: data.postDocumentType?.toString() ?? '',
       status:           data.status?.toString() ?? '',
-      projectId:        data.projectId        ?? '',
+      relatedToId:       data.relatedToId        ?? '',
       deliveryMethod:   data.deliveryMethod?.toString() ?? '1',
     });
 
@@ -523,11 +539,13 @@ export default function DocumentsViewPage() {
       fd.append('companyId',      formData.companyId);
       fd.append('oldReferenceNumber', formData.oldReferenceNumber || '');
       fd.append('inComingNumber',     formData.inComingNumber || '');
+      fd.append('aboutWork',      formData.aboutWork);
+      fd.append('relatedToId', formData.relatedToId ?? '');
       if (isIncoming) {
           fd.append('publishedArea',      formData.publishedId);
           fd.append('receivedFromId',     formData.receivedFromId || '');
-          fd.append('projectId',          formData.projectId);
           fd.append('originalsender',     formData.originalsender || '');
+          fd.append('aboutWork',      formData.aboutWork);
 
           fd.append('documentType',       formData.documentType || '0');
         } else {
@@ -547,9 +565,6 @@ export default function DocumentsViewPage() {
         fd.append('postNumber',     formData.postNumber);
         fd.append('recivedByName',  formData.recivedByName);
         fd.append('documentType',   formData.documentType);
-      }
-      if (isIncoming) {
-        fd.append('projectId', formData.projectId);
       }
 
       newAttachmentFiles.forEach(f => fd.append('Attachments', f));
@@ -720,7 +735,6 @@ export default function DocumentsViewPage() {
               placeholder="أدخل رقم الوارد"
             />
           </div>
-
           {/* <div>
             <Label>المشروع</Label>
             <SearchableSelect
@@ -859,7 +873,7 @@ export default function DocumentsViewPage() {
                         </button>
                       </td>
                       <td className="py-2.5 px-4 border-b border-border">
-                        <div className="flex items-center gap-2">
+                        {doc.canEdit?<div className="flex items-center gap-2">
                           <button
                             onClick={() => handleOpenUpdate(doc.id)}
                             disabled={updateLoading}
@@ -867,7 +881,7 @@ export default function DocumentsViewPage() {
                           >
                             تعديل
                           </button>
-                        </div>
+                        </div>:null}
                       </td>
                     </tr>
                   );
@@ -1000,6 +1014,7 @@ export default function DocumentsViewPage() {
           <div>
             <Label>صادر من</Label>
             <SearchableSelect
+              required
               options={publisherOpts}
               value={formData.publishedId}
               onChange={v => handleFormChange('publishedId', v)}
@@ -1007,6 +1022,17 @@ export default function DocumentsViewPage() {
               placeholder="اختر"
             />
           </div>
+          <div>
+  <Label>بخصوص</Label>
+
+  <SearchableSelect
+    name="RelatedToId"
+    options={projects}
+    value={formData.relatedToId ?? ''}
+    onChange={(value) => handleFormChange('relatedToId', value)}
+    placeholder="اختر المشروع - الإدارة"
+  />
+</div>
 
    {!isIncoming && (
   <>
@@ -1031,6 +1057,7 @@ export default function DocumentsViewPage() {
     <div>
       <Label>مستلم من</Label>
       <SearchableSelect
+        required
         options={deliveryOpts}
         value={formData.receivedFromId}
         onChange={(v) => handleFormChange("receivedFromId", v)}
@@ -1038,6 +1065,12 @@ export default function DocumentsViewPage() {
         placeholder="اختر"
       />
     </div>
+    
+    <div >
+            <Label>نوع الأعمال</Label>
+            <Input value={formData.aboutWork} onChange={e => handleFormChange('aboutWork', e.target.value)} />
+    </div>
+
   </>
 )}
           {/* الشركة — post-external, post-internal, post-transformer */}
@@ -1054,15 +1087,13 @@ export default function DocumentsViewPage() {
           {/* المشروع — incoming only */}
           {isIncoming && (
             <div className="md:col-span-2">
-              <Label>المشروع</Label>
-              <SearchableSelect
-                options={dropdownData.projectsList}
-                value={formData.projectId}
-                onChange={v => handleFormChange('projectId', v)}
-                placeholder="اختر"
-              />
+              <div >
+            <Label>نوع الأعمال</Label>
+            <Input value={formData.aboutWork} onChange={e => handleFormChange('aboutWork', e.target.value)} />
+            </div>
             </div>
           )}
+
 
           {/* الحالة — new */}
 
@@ -1107,6 +1138,7 @@ export default function DocumentsViewPage() {
 
           {isIncoming && (
                   <>
+
                   <div className="md:col-span-2">
                       <Label>نوع المستند</Label>
                       <SelectField value={formData.documentType} onChange={v => handleFormChange('documentType', v)}>

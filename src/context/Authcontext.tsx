@@ -1,6 +1,6 @@
-import React, { createContext, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { API_BASE_URL } from '../config/constants';
+import { useNavigate } from 'react-router-dom';
 
 interface LoginResponse {
   isSuccess: boolean;
@@ -15,6 +15,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: any | null;
   loading: boolean;
+  initializing: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,6 +24,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isAuthenticated, setIsAuthenticated] = React.useState<boolean>(false);
   const [user, setUser] = React.useState<any | null>(null);
   const [loading, setLoading] = React.useState<boolean>(false);
+  const [initializing, setInitializing] = React.useState<boolean>(true); 
+  const navigate = useNavigate();
 
   // Example login function - replace with your API call
   const login = async (
@@ -52,9 +55,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const data: LoginResponse = await response.json();
 
       if (data.isSuccess && data.token) {
-        // Store token in localStorage or sessionStorage
         localStorage.setItem('authToken', data.token);
-        localStorage.setItem('user', data.userName || '');
+        localStorage.setItem('user', JSON.stringify(data.userName || ''));
 
         setIsAuthenticated(true);
         setUser(data.userName);
@@ -83,22 +85,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('user');
     setIsAuthenticated(false);
     setUser(null);
+    navigate('/'); // Redirect to login page after logout
   };
 
-  React.useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    const savedUser = localStorage.getItem('user');
+React.useEffect(() => {
+  const token = localStorage.getItem('authToken');
+  const savedUser = localStorage.getItem('user');
 
-    if (token && savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        logout();
-      }
+  if (token && savedUser) {
+    try {
+      // If you only ever store a plain username string, just use it directly:
+      setUser(savedUser);
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      logout();
     }
-  }, []);
+  }
+  setInitializing(false);
+}, []);
 
   const value: AuthContextType = {
     login,
@@ -106,6 +111,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isAuthenticated,
     user,
     loading,
+    initializing,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

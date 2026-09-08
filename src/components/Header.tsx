@@ -56,7 +56,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
         <div className="hidden sm:flex items-center gap-2">
           <div className="text-left leading-tight">
-            <div className="text-[13px] font-bold text-[#1a2744]">Hello: { localStorage.getItem('user') || 'User' }</div>
+            <div className="text-[13px] font-bold text-[#1a2744]">Hello: { JSON.parse(localStorage.getItem('user') || '""') || 'User' }</div>
           </div>
         </div>
 

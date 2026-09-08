@@ -92,13 +92,11 @@ export default function GenericPostForm({
   const [companies,      setCompanies]      = useState<Option[]>([]);
   const [publisherOpts,  setPublisherOpts]  = useState<Option[]>([]);
   const [deliveryOpts,   setDeliveryOpts]   = useState<Option[]>([]);
- // const [workTypes,      setWorkTypes]      = useState<Option[]>([]);
   const [projects,       setProjects]       = useState<Option[]>([]);
-  const [projectId,      setProjectId]       = useState('');
   const [loading,        setLoading]        = useState(true);
   const [loadError,      setLoadError]      = useState('');
   const [successMsg,     setSuccessMsg]     = useState('');
-
+  const [relatedToId,     setRelatedToId]=     useState('');
   const [documentNumber, setDocumentNumber] = useState('');
   const [companyId,      setCompanyId]      = useState('');
   const [publisherType,  setPublisherType]  = useState('');
@@ -268,7 +266,7 @@ export default function GenericPostForm({
     setDeliveryMethod('1'); setDeliveryDate(''); setDocumentDate('');
     setStatusMethod('1'); // default back to "مكتمل"
     setSubject(''); setSummary(''); setNotes('');
-    setProjectId(''); // بخصوص
+    setRelatedToId(''); // بخصوص
     setSelectedFiles([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
     setSelectedPersons([]); setFollowOption(''); setFollowNotes(''); // موجه إلي (+ its display, derived from selectedPersons)
@@ -613,10 +611,10 @@ export default function GenericPostForm({
                  <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-4">
                   <FieldWrap label="بخصوص">
                     <SearchableSelect
-                      name="ProjectId"
+                      name="RelatedToId"
                       options={projects}
-                      value={projectId}
-                      onChange={setProjectId}
+                      value={relatedToId}
+                      onChange={setRelatedToId}
                       placeholder="اختر المشروع - الإدارة"
                     />
                   </FieldWrap>
