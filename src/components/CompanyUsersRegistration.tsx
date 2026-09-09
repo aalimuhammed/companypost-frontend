@@ -142,9 +142,16 @@ const CompanyUsersRegistration: React.FC = () => {
       setAlert({ type: 'error', message: 'يرجى تعبئة جميع الحقول المطلوبة.' });
       return false;
     }
+    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.Email)) {
       setAlert({ type: 'error', message: 'يرجى إدخال بريد إلكتروني صالح.' });
+      return false;
+    }
+
+    if(formData.Password.length<6)
+    {
+      setAlert({ type: 'error', message: 'يجب ألا تقل كلمة المرور عن 6 حروف ' });
       return false;
     }
     const domain = formData.Email.split('@')[1]?.toLowerCase();

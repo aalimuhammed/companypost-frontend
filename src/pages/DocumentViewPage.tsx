@@ -1,11 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Badge, Spinner, Alert, Modal, Button } from '../components/UI';
-//import type { BadgeVariant } from '../components/UI';
 import { SearchableSelect } from '../components/SearchableSelect';
 import { API_BASE_URL } from '../config/constants';
 import type { Attachment } from '../types';
 import { API } from '../config/api';
-
+import type { Option } from '../types';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Doc {
