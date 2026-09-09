@@ -279,8 +279,19 @@ const Login: React.FC = () => {
               إنشاء حساب جديد
             </button>
           </div>
+          <div className="mt-6 text-center text-sm" style={{ color: '#64748b' }}>
+               هل نسيت كلمة المرور؟ {' '}
+            <button
+              onClick={() => navigate('/forgotpassword')}
+              className="font-semibold transition-colors duration-150"
+              style={{ color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer' }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#93c5fd')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#60a5fa')}
+            >
+              أعد انشاء كلمة المرور
+            </button>
+          </div>
         </div>
-
         {/* Bottom accent */}
         <div
           className="h-px w-full"

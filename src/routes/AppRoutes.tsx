@@ -79,7 +79,7 @@ export default function App() {
       <Routes>
 
         {/* Auth pages WITHOUT layout */}
-        <Route path="/" element={<ForgotPassword />} />
+        <Route path="/" element={<Login />} />
         <Route path="/register" element={<CompanyUsersRegistration />} />
         <Route path="/forgotpassword" element={<ForgotPassword/>}/>
         <Route path="/resetpassword" element={<ResetPassword/>}/>
