@@ -12,6 +12,8 @@ import { AuthProvider } from '../context/Authcontext';
 import Login from '../components/Login';
 import CompanyUsersRegistration from '../components/CompanyUsersRegistration';
 import PrivateRoute from "../components/PrivateRoute";
+import ForgotPassword from '../pages/ForgotPassword';
+import ResetPassword from '../pages/ResetPassword';
 
 // Close drawer on route change
 function RouteWatcher({ onRouteChange }: { onRouteChange: () => void }) {
@@ -77,8 +79,10 @@ export default function App() {
       <Routes>
 
         {/* Auth pages WITHOUT layout */}
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<ForgotPassword />} />
         <Route path="/register" element={<CompanyUsersRegistration />} />
+        <Route path="/forgotpassword" element={<ForgotPassword/>}/>
+        <Route path="/resetpassword" element={<ResetPassword/>}/>
 
         {/* Pages WITH layout */}
         <Route
