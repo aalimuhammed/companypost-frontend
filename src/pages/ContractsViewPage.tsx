@@ -140,6 +140,7 @@ export default function ContractsViewPage() {
 
   const [existingAttachments, setExistingAttachments] = useState<ExistingAttachment[]>([]);
   const [attachmentIdsToDelete, setAttachmentIdsToDelete] = useState<string[]>([]);
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   useEffect(() => {
     const h = { Authorization: `Bearer ${localStorage.getItem('authToken')}` };
@@ -154,25 +155,39 @@ export default function ContractsViewPage() {
     }).catch(() => {});
   }, []);
 
+  const buildContractsFilterQuery = () => {
+  const q = new URLSearchParams();
+  if (projectId)        q.append('ProjectId',        projectId);
+  if (supplierId)       q.append('PublisherId',      supplierId);
+  if (departmentId)     q.append('DepartmentId',     departmentId);
+  if (startDate)        q.append('StartDate',        startDate);
+  if (endDate)          q.append('EndDate',          endDate);
+  if (contractRef)      q.append('ContractRef',      contractRef);
+  if (purchaseOrderRef) q.append('PurchaseOrderRef', purchaseOrderRef);
+  if (workTypeId)       q.append('WorkTypeId',       workTypeId);
+  return q;
+};
+
   const handleSearch = async () => {
     const allEmpty = !contractRef && !projectId && !supplierId && !departmentId && !purchaseOrderRef && !workTypeId && !contractId;
     if (allEmpty && (!startDate || !endDate)) { setError('يرجى تحديد نطاق زمني أو فلتر للبحث'); return; }
     setSearching(true); setError(''); setPage(1);
     try {
       const h = { Authorization: `Bearer ${localStorage.getItem('authToken')}` };
-      const q = new URLSearchParams();
-      if (projectId)        q.append('ProjectId',        projectId);
-      if (supplierId)       q.append('PublisherId',      supplierId);
-      if (departmentId)     q.append('DepartmentId',     departmentId);
-      if (startDate)        q.append('StartDate',        startDate);
-      if (endDate)          q.append('EndDate',          endDate);
-      if (contractRef)      q.append('ContractRef',      contractRef);
-      if (purchaseOrderRef) q.append('PurchaseOrderRef', purchaseOrderRef);
-      if (workTypeId)       q.append('WorkTypeId',       workTypeId);
+      // const q = new URLSearchParams();
+      // if (projectId)        q.append('ProjectId',        projectId);
+      // if (supplierId)       q.append('PublisherId',      supplierId);
+      // if (departmentId)     q.append('DepartmentId',     departmentId);
+      // if (startDate)        q.append('StartDate',        startDate);
+      // if (endDate)          q.append('EndDate',          endDate);
+      // if (contractRef)      q.append('ContractRef',      contractRef);
+      // if (purchaseOrderRef) q.append('PurchaseOrderRef', purchaseOrderRef);
+      // if (workTypeId)       q.append('WorkTypeId',       workTypeId);
+         const q = buildContractsFilterQuery();
 
-   const res = await fetch(`${API_BASE_URL}/Documents/contracts?${q}`, { headers: h });
-if (!res.ok) throw new Error();
-const data = await res.json();
+        const res = await fetch(`${API_BASE_URL}/Documents/contracts?${q}`, { headers: h });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
 
 const flattened: Contract[] = [];
 
@@ -243,6 +258,34 @@ setDocuments(flattened);
     } catch { setError('حدث خطأ أثناء جلب العقود'); }
     finally { setSearching(false); }
   };
+
+  const handleExportExcel = async () => {
+  const allEmpty = !contractRef && !projectId && !supplierId && !departmentId && !purchaseOrderRef && !workTypeId && !contractId;
+  if (allEmpty && (!startDate || !endDate)) { setError('يرجى تحديد نطاق زمني أو فلتر للتصدير'); return; }
+  setExportingExcel(true);
+  setError('');
+  try {
+    const h = { Authorization: `Bearer ${localStorage.getItem('authToken')}` };
+    const q = buildContractsFilterQuery();
+
+    const res = await fetch(`${API_BASE_URL}/Documents/contracts/?${q}`, { headers: h });
+    if (!res.ok) throw new Error();
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `العقود-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch {
+    setError('حدث خطأ أثناء تصدير ملف Excel');
+  } finally {
+    setExportingExcel(false);
+  }
+};
 
   const viewAtt = (filePaths: string | string[] | null | undefined) => {
     const valid = Array.isArray(filePaths) ? filePaths.filter(Boolean) : filePaths ? [filePaths] : [];
@@ -438,36 +481,57 @@ const submitUpdate = async () => {
             <input value={purchaseOrderRef} onChange={e => setPurchaseOrderRef(e.target.value)} className="siac-input" placeholder="مرجع أمر التوريد" />
           </FieldWrap>
         </div>
-        <div className="flex justify-end gap-3">
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  // clear the search form fields
-                  setContractRef('');
-                  setProjectId('');
-                  setSupplierId('');
-                  setWorkTypeId('');
-                  setDepartmentId('');
-                  setStartDate('');
-                  setEndDate('');
-                  setPurchaseOrderRef('');
-
-                  // clear the results table itself, plus its sort/filters/search box
-                  setDocuments([]);
-                  setColumnFilters({});
-                  setSortConfig(null);
-                  setSearchQuery('');
-                  setError('');
-                  setPage(1);
-                }}
-              >
+          <br />
+         <div className="flex justify-end gap-4">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setContractRef('');
+                setProjectId('');
+                setSupplierId('');
+                setWorkTypeId('');
+                setDepartmentId('');
+                setStartDate('');
+                setEndDate('');
+                setPurchaseOrderRef('');
+                setDocuments([]);
+                setColumnFilters({});
+                setSortConfig(null);
+                setSearchQuery('');
+                setError('');
+                setPage(1);
+              }}
+            >
               إعادة تعيين
-              </Button>
-          <Button loading={searching} onClick={handleSearch}>
-            <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.4"/><path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
-            عرض العقود
-          </Button>
-        </div>
+            </Button>
+
+            <Button
+              variant="secondary"
+              loading={exportingExcel}
+              onClick={handleExportExcel}
+              className="!border-[#1e7e34] !text-[#1e7e34] hover:!bg-[#eaf7ee]"
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z"
+                    stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"
+                  />
+                  <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                  <path
+                    d="M8.5 12.5 12 17m0-4.5-3.5 4.5M15.5 12.5 12 17"
+                    stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"
+                  />
+                </svg>
+                تصدير Excel
+              </span>
+            </Button>
+
+            <Button loading={searching} onClick={handleSearch}>
+              <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.4"/><path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+              عرض العقود
+            </Button>
+          </div>
       </div>
 
       {error && <div className="mb-4"><Alert type="error" onClose={() => setError('')}>{error}</Alert></div>}
