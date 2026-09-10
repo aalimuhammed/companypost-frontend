@@ -268,7 +268,7 @@ setDocuments(flattened);
     const h = { Authorization: `Bearer ${localStorage.getItem('authToken')}` };
     const q = buildContractsFilterQuery();
 
-    const res = await fetch(`${API_BASE_URL}/Documents/contracts/?${q}`, { headers: h });
+    const res = await fetch(`${API_BASE_URL}/Excel/contracts/?${q}`, { headers: h });
     if (!res.ok) throw new Error();
 
     const blob = await res.blob();
