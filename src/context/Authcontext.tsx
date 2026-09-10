@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, type ReactNode } from 'react';
 import { API_BASE_URL } from '../config/constants';
 import { useNavigate } from 'react-router-dom';
 

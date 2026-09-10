@@ -256,6 +256,7 @@ export default function DocumentsViewPage() {
   const [formData,      setFormData]      = useState<UpdateFormData>({ ...EMPTY_FORM });
   const [selectedId,    setSelectedId]    = useState<string | null>(null);
   const [projects, setProjects] = useState<Option[]>([]);
+  const [exportingExcel, setExportingExcel] = useState(false);
   // جهة الصدور / جهة التسليم — client-side only, never sent to the backend.
   // The backend only stores publishedId/receivedFromId as raw GUIDs with no
   // type flag, so on load we infer Department vs Project vs Company by
@@ -318,6 +319,15 @@ export default function DocumentsViewPage() {
     }
   };
 
+const buildFilterQueryString = () => {
+  const qs = new URLSearchParams();
+  if (startDate)       qs.append('startDate',      startDate);
+  if (endDate)         qs.append('endDate',         endDate);
+  if (documentNumber)  qs.append('documentNumber',  documentNumber);
+  if (inComingNumber)  qs.append('incomingNumber',  inComingNumber);
+  if (filterProjectId) qs.append('projectId',       filterProjectId);
+  return qs;
+};
 
   // ── Load filter projects on mount ──
   // useEffect(() => {
@@ -341,12 +351,14 @@ export default function DocumentsViewPage() {
     setError('');
     setPage(1);
     try {
-      const qs = new URLSearchParams();
-      if (startDate)       qs.append('startDate',      startDate);
-      if (endDate)         qs.append('endDate',         endDate);
-      if (documentNumber)  qs.append('documentNumber',  documentNumber);
-      if (inComingNumber)  qs.append('incomingNumber',  inComingNumber);
-      if (filterProjectId) qs.append('projectId',       filterProjectId);
+      // const qs = new URLSearchParams();
+      // if (startDate)       qs.append('startDate',      startDate);
+      // if (endDate)         qs.append('endDate',         endDate);
+      // if (documentNumber)  qs.append('documentNumber',  documentNumber);
+      // if (inComingNumber)  qs.append('incomingNumber',  inComingNumber);
+      // if (filterProjectId) qs.append('projectId',       filterProjectId);
+
+       const qs = buildFilterQueryString();
 
       const url = `${API_BASE_URL}/Documents/${selectedType}${qs.toString() ? `?${qs}` : ''}`;
       const res = await fetch(url, { headers: authHeader() });
@@ -359,6 +371,40 @@ export default function DocumentsViewPage() {
       setLoading(false);
     }
   };
+
+  const handleExportExcel = async () => {
+  const allEmpty = !documentNumber && !inComingNumber && !filterProjectId;
+  if (allEmpty && (!startDate || !endDate)) {
+    setError('يرجى تحديد نطاق زمني أو فلتر للتصدير');
+    return;
+  }
+  setExportingExcel(true);
+  setError('');
+  try {
+    const qs = buildFilterQueryString();
+    const url = `${API_BASE_URL}/Excel/${selectedType}/${qs.toString() ? `?${qs}` : ''}`;
+    const res = await fetch(url, { headers: authHeader() });
+    if (!res.ok) throw new Error();
+
+    const blob = await res.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+
+    const typeLabel = DOC_TYPES.find(t => t.value === selectedType)?.label ?? 'documents';
+    const dateStamp = new Date().toISOString().slice(0, 10);
+    link.download = `${typeLabel}-${dateStamp}.xlsx`;
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+  } catch {
+    setError('حدث خطأ أثناء تصدير ملف Excel');
+  } finally {
+    setExportingExcel(false);
+  }
+};
 
   const resetFilters = () => {
     setStartDate('');
@@ -748,6 +794,27 @@ export default function DocumentsViewPage() {
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={resetFilters}>
             إعادة تعيين
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={handleExportExcel}
+            loading={exportingExcel}
+            className="!border-green-600 !text-green-700 hover:!bg-green-50"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z"
+                  stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"
+                />
+                <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                <path
+                  d="M8.5 12.5 12 17m0-4.5-3.5 4.5M15.5 12.5 12 17"
+                  stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"
+                />
+              </svg>
+              تصدير Excel
+            </span>
           </Button>
           <Button onClick={handleViewDocuments} loading={loading}>
             عرض المستندات
